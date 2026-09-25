@@ -1,12 +1,19 @@
 {
-  "rows": 500,
+  "best_model": "K-Means",
+  "mode": "advanced",
   "features": [
-    "Annual Income (k$)",
-    "Spending Score (1-100)"
+    "Annual Income",
+    "Spending Score",
+    "Age",
+    "Recency",
+    "Purchase Frequency",
+    "Total Purchase Amount"
   ],
+  "k": 4,
   "suggested_k": 4,
-  "selected_k": 4,
-  "silhouette_score": 0.6371241003646813,
-  "random_state": 42,
-  "input": "D:\\ML project\\Mall_Customer_Segmentation\\dataset\\Mall_Customers.csv"
+  "as_of": "2026-09-25",
+  "eps": 0.75,
+  "min_samples": 10,
+  "customers": 2000,
+  "transactions": 32800
 }

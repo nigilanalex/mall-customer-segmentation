@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "customers": 2000,
+  "seed": 42,
+  "as_of": "2026-09-25",
+  "window_days": 365,
+  "income_unit": "thousands of USD",
+  "amount_unit": "USD"
+}

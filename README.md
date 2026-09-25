@@ -1,134 +1,302 @@
-# Mall Customer Segmentation using K-Means Clustering
+# AI-Based Customer Segmentation and Personalized Marketing Recommendation System using Machine Learning
+
+**A college ML project with authenticated analytics, transaction-derived RFM, four clustering models and explainable marketing suggestions.**
+
+![Home dashboard](documentation/screenshots/01_home.png)
+
+| Demonstration | Included result |
+|---|---|
+| Customers / transactions | 2,000 / 32,800 synthetic records |
+| Recommended model | K-Means, four clusters |
+| Silhouette score | 0.3730; internal separation measure, not accuracy |
+| Interface | Administrator login and six protected dashboard views |
+| Submission material | 44-page report, editable 15-slide presentation, 50 viva answers |
+
+[Project report](documentation/Project_Report.pdf) · [Presentation](documentation/Presentation.pptx) · [Final viva guide](VIVA_GUIDE_FINAL.md) · [Editing instructions](documentation/EDITING_GUIDE.md) · [Verification](documentation/VERIFICATION.md)
 
 ## Abstract
-This beginner-friendly Python project groups mall customers by annual income and spending score. It demonstrates data validation, exploratory data analysis (EDA), feature scaling, elbow analysis, K-Means training, visualization, and model persistence. A Streamlit dashboard supports CSV uploads, interactive charts, adjustable cluster counts, and result downloads.
 
-## Problem statement
-A mall may serve customers with different budgets and spending habits. Grouping similar customers can help analysts explore possible marketing strategies. This project discovers groups without predefined labels; it does not predict purchases or prove that a marketing campaign will succeed.
+This project groups customers by purchase behavior and demographic measurements, compares alternative clustering methods and converts segment profiles into transparent marketing suggestions. Recency, frequency and monetary value are derived from transaction records and combined with annual income, spending score and age. Four clustering algorithms are evaluated in a common transformed feature space. A Streamlit dashboard provides administrator authentication, CSV upload, interactive visualizations, model comparison, customer assignment and explanations. SQLite preserves dataset snapshots and analysis history. Synthetic data makes the demonstration reproducible; the results do not establish real-world marketing effectiveness.
 
-## Dataset and provenance
-The bundled `dataset/Mall_Customers.csv` contains **500 synthetic customers**, generated with NumPy and seed 42. No original Mall Customers dataset was available in the workspace. The demo deliberately samples five income/spending groups, so clear separation is expected and is not evidence of real-world effectiveness. Age and gender are generated independently of those groups.
+## Introduction
 
-| Column | Meaning | Used for clustering? |
-|---|---|---|
-| CustomerID | Unique customer identifier | No |
-| Gender | Descriptive category | No |
-| Age | Age in years | No; EDA only |
-| Annual Income (k$) | Annual income in thousands of dollars | Yes |
-| Spending Score (1-100) | Spending indicator from 1 to 100 | Yes |
+Customers with similar incomes can have different buying habits. Purchase history adds context: a frequent shopper, a premium customer and a previously active customer who has stopped purchasing may require different actions.
 
-The program reports missing values before cleaning. Missing numeric measurements are replaced by each column's median; an entirely missing numeric column is rejected. Missing gender becomes `Unknown`. Invalid numbers, infinities, negative ages/incomes, out-of-range scores, missing/duplicate customer IDs, missing columns, and insufficient distinct observations produce readable errors. Rows are preserved rather than silently dropped. IDs and demographic categories are excluded from Euclidean distance.
+This upgrades **Mall Customer Segmentation using K-Means Clustering**. The original working project remains in `legacy/`, and the advanced application retains a classic income/spending mode. Here, AI means unsupervised machine learning plus explicit recommendation rules. No LLM, paid API or campaign delivery service is required.
 
-## Project structure
-```text
-Mall_Customer_Segmentation/
-├── dataset/
-│   └── Mall_Customers.csv
-├── main.py
-├── app.py
-├── requirements.txt
-├── requirements-lock.txt       # Exact environment used for verification
-├── README.md
-├── VIVA_GUIDE.md
-├── models/
-│   └── kmeans_pipeline.pkl
-└── outputs/
-    ├── elbow_curve.png
-    ├── customer_clusters.png
-    ├── customer_eda.png
-    ├── segmented_customers.csv
-    ├── cluster_centers.csv
-    ├── elbow_scores.csv
-    └── metrics.json
+## Problem Statement
+
+How can an analyst transform customer and purchase records into interpretable groups, compare clustering approaches, explain a new customer's assignment and inspect suitable marketing actions in one reproducible system?
+
+## Objectives
+
+- Preserve preprocessing, EDA, K-Means, elbow analysis, silhouette evaluation, model saving and visualization.
+- Derive auditable RFM features and compare four clustering algorithms.
+- Explain assignments and show segment profiles with actionable suggestions.
+- Provide an authenticated dashboard with uploads, 2D/3D graphs and downloads.
+- Store customers, transactions, clustering results and recommendations in SQLite.
+- Deliver runnable source, synthetic data, measured outputs and college presentation material.
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[Administrator login] --> B[Protected Streamlit dashboard]
+    B --> C[Customer CSV and optional transaction CSV]
+    C --> D[Validation and RFM aggregation]
+    D --> E[SQLite dataset snapshot]
+    E --> F[Imputation, log RFM and standard scaling]
+    F --> G[K-Means / Ward / DBSCAN / GMM]
+    G --> H[Metrics, coverage and model ranking]
+    H --> I[Cluster profiles and marketing rules]
+    I --> J[Interactive results and customer prediction]
+    I --> K[SQLite run results and downloadable artifacts]
 ```
 
-## Algorithm explanation
-1. Select annual income and spending score.
-2. Standardize each feature by subtracting its mean and dividing by its standard deviation. This gives both features comparable influence on distance.
-3. Fit K-Means for candidate values of k from 1 to at most 10. Inertia is the sum of squared distances to assigned centers, measured in standardized coordinates.
-4. Plot inertia against k. The elbow is where adding more clusters starts giving smaller improvements. This implementation suggests the point with the greatest distance below the straight line joining the normalized endpoints. This heuristic is **not a guaranteed optimal k**; inspect the plot and compare nearby values.
-5. Initialize k centers with K-Means++, assign each customer to the nearest center, then recompute centers as the average of their assigned customers. Repeat until convergence or the iteration limit.
-6. Run ten initializations (`n_init=10`) and retain the fit with lowest inertia. Seed 42 makes results reproducible within the same software environment.
-7. Inverse-transform centers into original income/spending units and save all assignments.
+The command-line workflow shares the same analytics modules. Saved bundles include fitted preprocessing and recommendation thresholds, so prediction reuses training transformations.
 
-K-Means is useful here because it is fast, easy to explain, and provides interpretable centers for two numeric features. It works best with compact, roughly spherical groups. It is sensitive to outliers, feature scaling, initialization, and the chosen k. Cluster IDs are arbitrary labels, not rankings.
+## Technologies Used
 
-## Installation in VS Code
-Install Python 3.11 or newer and the VS Code Python extension. Open this project folder using **File → Open Folder**, then open **Terminal → New Terminal**.
+| Technology | Role |
+|---|---|
+| Python | Application and analytics |
+| pandas / NumPy | Tabular and numerical processing |
+| scikit-learn | Preprocessing, clustering and evaluation |
+| Matplotlib / seaborn | Saved plots and EDA |
+| Plotly | Interactive 2D/3D charts |
+| Streamlit | Login, navigation, forms and dashboard |
+| SQLite / Python standard library | Dataset history, password hashing and sessions |
+| ReportLab / pypdf / PyMuPDF | Optional PDF generation and verification |
+| Microsoft PowerPoint | Editable presentation generation and rendering |
 
-Windows PowerShell (activation is optional):
+PowerPoint and document-generation packages are **not required to run the ML application**. Completed PDF/PPTX files are included.
+
+## Dataset Description
+
+The supplied files contain **2,000 synthetic customers and 32,800 synthetic transactions**, generated with seed 42. Reference date: **2026-09-25**. See [provenance](dataset/provenance.json).
+
+| Customer column | Meaning / units | Advanced model input |
+|---|---|---|
+| CustomerID | Unique join identifier | No |
+| Gender | Descriptive category | No |
+| Age | Years | Yes |
+| Annual Income | Thousands of USD | Yes |
+| Spending Score | Indicator from 1 to 100 | Yes |
+| Purchase Frequency | Purchases in the window | Yes |
+| Total Purchase Amount | USD spent in the window | Yes |
+| Last Purchase Date | Latest in-window purchase | Used for validation/RFM |
+| Recency | Days since latest in-window purchase | Yes |
+| Customer Satisfaction Score | Synthetic rating from 1 to 5 | No |
+
+`Transactions.csv` contains `TransactionID`, `CustomerID`, `Purchase Date` and `Amount`. Each row represents one completed purchase with a positive amount. Refunds and multi-line orders require a richer input contract.
+
+The original `Annual Income (k$)` and `Spending Score (1-100)` names remain accepted aliases. Classic mode accepts the original five-column schema. Advanced mode needs RFM summaries or a transaction ledger. Interactive uploads support 20–10,000 customers.
+
+## RFM Analysis Explanation
+
+- **Recency:** days between the reference date and latest qualifying purchase.
+- **Frequency:** number of qualifying purchase rows per customer.
+- **Monetary:** sum of qualifying purchase amounts per customer.
+
+Purchases are filtered from `reference date - 365 days` through the reference date, **both boundaries included**. Future purchases are rejected. Customers without purchases in that window retain frequency/value zero and recency 366, a documented sentinel. A supplied ledger is authoritative and replaces supplied RFM summaries.
+
+Example: purchases of $120, $80 and $100, latest on 20 September with reference date 25 September, yield **R = 5 days, F = 3, M = $300**.
+
+Preprocessing applies fitted median imputation, `log1p` to RFM and standard scaling. IDs, gender and satisfaction do not enter distances. The [technical guide](documentation/Technical_Guide.md) explains validation and model interfaces.
+
+## Machine Learning Algorithms
+
+| Algorithm | Grouping method | New-customer assignment |
+|---|---|---|
+| K-Means | Nearest-center assignment and mean updates | Native prediction |
+| Agglomerative / Ward | Merges groups to limit variance increases | Explicit nearest-centroid proxy |
+| DBSCAN | Density-connected groups and noise (-1) | Project extension: fitted core sample within `eps` |
+| Gaussian Mixture | Weighted Gaussian components | Native maximum-posterior component |
+
+K-Means is efficient, beginner-friendly and has interpretable centers. Scaling and compact-cluster assumptions matter. The elbow heuristic suggests a count; it does not prove a universally optimal segmentation. K-Means, Ward and GMM share the selected count; DBSCAN determines its own.
+
+### Literature Survey
+
+The [scikit-learn clustering guide](https://scikit-learn.org/stable/modules/clustering.html) describes centroid, hierarchical and density-based assumptions. The [mixture guide](https://scikit-learn.org/stable/modules/mixture.html) describes probabilistic components. [Fader, Hardie and Lee (2005)](https://www.brucehardie.com/papers/018/) provide a separate probabilistic customer-base analysis direction; this project computes descriptive RFM and does not implement their BG/NBD model. Internal validation supports comparison without known labels; business usefulness needs external validation.
+
+## Model Comparison
+
+Measured advanced-mode configuration: seed 42, k = 4, DBSCAN `eps = 0.75`, `min_samples = 10`.
+
+| Model | Clusters | Coverage | Silhouette (higher) | Davies-Bouldin (lower) | Calinski-Harabasz (higher) |
+|---|---:|---:|---:|---:|---:|
+| K-Means | 4 | 100% | 0.3730 | 1.0063 | 1330.10 |
+| Agglomerative | 4 | 100% | 0.3689 | 0.9797 | 1237.67 |
+| DBSCAN | 3 | 84.8% | 0.3422 | 1.0021 | 880.58 |
+| Gaussian Mixture | 4 | 100% | 0.3549 | 1.0594 | 1246.72 |
+
+**K-Means is recommended by the implemented ranking policy.** Eligible models need valid metrics and at least 80% coverage. Metric ranks are averaged and combined with an unassigned-customer penalty. DBSCAN scores exclude noise and describe its assigned subset. Ward leads Davies-Bouldin; K-Means leads the other two metrics. Parameters were explored on the demonstration data; these are not held-out benchmark results.
+
+![Model comparison chart](outputs/model_comparison.png)
+
+## Results
+
+| K-Means group | Customers | Category | Suggested action |
+|---|---:|---|---|
+| 0 | 508 | Growth opportunity | Discounts and personalized product campaigns |
+| 1 | 373 | VIP segment | Premium membership, luxury offers and early access |
+| 2 | 776 | Value-focused loyalists | Budget-friendly offers, bundles and loyalty rewards |
+| 3 | 343 | At-risk / Engagement segment | Engagement and win-back suggestions |
+
+DBSCAN marks 304 customers as noise. Cluster IDs are arbitrary and may change after retraining. Recommendations use group means, frozen cohort median thresholds and explicit rules such as average recency over 90 days. They are segment suggestions, not learned campaign-response predictions.
+
+Prediction accepts age, gender, income, spending score, recency, frequency and monetary value. It returns a group, category, recommendation and explanation. K-Means explanations compare transformed feature distances; Ward explains its centroid proxy; DBSCAN explains core-sample proximity; GMM shows posterior assignment with descriptive mean similarity. These are not causal explanations.
+
+Included outputs: [customer assignments](outputs/segmented_customers.csv), [cluster profiles](outputs/cluster_centers.csv), [comparison metrics](outputs/model_comparison.csv), [sample prediction](outputs/sample_prediction.json), PNG graphs and an [interactive 3D chart](outputs/customer_3d.html).
+
+## Dashboard Screenshots
+
+These are actual screenshots from the running application, saved in `documentation/screenshots/` and mirrored in `screenshots/`.
+
+| Login | Home dashboard |
+|---|---|
+| ![Login](documentation/screenshots/00_login.png) | ![Home](documentation/screenshots/01_home.png) |
+
+| Segmentation | 3D visualization |
+|---|---|
+| ![Segmentation](documentation/screenshots/03_segmentation.png) | ![3D](documentation/screenshots/07_rfm_3d.png) |
+
+| Model comparison | Customer prediction |
+|---|---|
+| ![Comparison](documentation/screenshots/04_comparison.png) | ![Prediction](documentation/screenshots/05_prediction.png) |
+
+| Marketing recommendations | Customer analysis |
+|---|---|
+| ![Marketing](documentation/screenshots/06_marketing.png) | ![Analysis](documentation/screenshots/02_dataset.png) |
+
+## Installation Steps
+
+Use Python 3.11 or newer. The verified local environment uses Python 3.14.6. Open the folder in VS Code and select `.venv\Scripts\python.exe` through **Python: Select Interpreter**.
+
+For a fresh copy, use the VS Code PowerShell terminal:
+
 ```powershell
+cd "D:\ML project\AI_Customer_Segmentation"
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe main.py
-.\.venv\Scripts\python.exe -m streamlit run app.py
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
-In VS Code, run **Python: Select Interpreter** from the command palette and choose `.venv\Scripts\python.exe`.
 
-macOS/Linux:
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python main.py
-.venv/bin/python -m streamlit run app.py
+Replace the first path if extracted elsewhere. `requirements-lock.txt` records verified runtime versions for compatible environments. macOS/Linux users can substitute `python3 -m venv .venv` and `.venv/bin/python`.
+
+## How to Run
+
+The existing local environment is already installed. Start with:
+
+```powershell
+cd "D:\ML project\AI_Customer_Segmentation"
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
 ```
-Use `requirements-lock.txt` instead of `requirements.txt` to reproduce the exact tested dependency versions where supported. The normal requirements allow compatible updates.
 
-## How to run
-After choosing/activating your environment:
-```bash
-python main.py
-python main.py --clusters 5
-python main.py --data dataset/My_Customers.csv --clusters 4
-python main.py --help
-python -m streamlit run app.py
+Open **http://localhost:8501**. Login: **`admin` / `admin123`**. Keep the terminal open; press **Ctrl+C** to stop. Virtual-environment activation is unnecessary with these commands.
+
+### Authentication and Navigation
+
+The login gate runs before dashboard data and pages. The sidebar displays administrator information and logout. Passwords use salted PBKDF2-HMAC-SHA256 (600,000 iterations); SQLite stores hashed session tokens. Five failures trigger a one-minute account lock. Sessions expire after 30 minutes idle or eight hours total, checked on interaction. Logout revokes the token and clears session state. Reloading the browser may require login again.
+
+This is a **local college demonstration**, with a published shared password. Bootstrap credentials can be set with `AI_ADMIN_USERNAME` and `AI_ADMIN_PASSWORD` **before the first creation of `database/auth.db`**; these variables do not reset an existing account. Local databases and uploaded records are excluded from Git and the portable ZIP.
+
+1. **Home dashboard:** total customers, transactions, best model, cluster count, silhouette and segment cards.
+2. **Customer analysis:** preview, missing values, distributions, correlations and RFM.
+3. **Clustering results:** 2D/3D views, elbow chart, distribution and assignments.
+4. **Model comparison:** metrics, charts, coverage and recommendation policy.
+5. **Customer prediction:** seven inputs, assignment and explanation.
+6. **Marketing recommendations:** profile cards and audience downloads.
+
+Open **Data and model settings** in the sidebar, upload customer/transaction CSVs and click **Run analysis**. Select a fitted algorithm without retraining. Uploaded analyses stay in the session and local SQLite; bundled CSV/model artifacts remain the demonstration baseline.
+
+### Command-line Examples
+
+```powershell
+.\.venv\Scripts\python.exe main.py --help
+.\.venv\Scripts\python.exe main.py --clusters 5
+.\.venv\Scripts\python.exe main.py --data dataset/My_Customers.csv --transactions dataset/My_Transactions.csv --as-of 2026-09-25
+.\.venv\Scripts\python.exe main.py --mode classic --data legacy/dataset/Mall_Customers.csv
 ```
-The default command automatically uses the elbow suggestion. Paths for bundled data and outputs are relative to the script, so launching from another working directory is supported. Custom relative paths are relative to your current terminal directory. Each CLI run replaces the saved model and output files. A missing default CSV is regenerated synthetically; a missing custom CSV produces an error.
 
-The terminal displays schema information, missing values, summary statistics, selected k, every customer's assignment, cluster sizes, and center values. Open the PNG files in `outputs/` to view the saved charts.
+CLI training replaces current model/output artifacts and appends a SQLite run. Use separate `--output`, `--model-dir` and `--database` paths for experiments. `--generate` explicitly replaces synthetic CSVs. Original `legacy/main.py` and `legacy/app.py` remain available; the legacy app is a separate historical demo without the new login.
 
-Streamlit normally opens at `http://localhost:8501`. Use the bundled data or upload a CSV with the five required columns. Adjust k, hover over customers, zoom or pan, inspect centers and distributions, and download assignments. The dashboard does not overwrite the CLI model or bundled CSV. Stop the server with **Ctrl+C**.
+### Verification and Artifact Regeneration
 
-## Results and interpretation
-The included default run selected **4 clusters** and obtained a silhouette score of **0.637** on 500 customers. The simple elbow heuristic merges two of the five generated groups; this illustrates why an automatic suggestion requires inspection. Run `python main.py --clusters 5` or move the dashboard slider to compare five groups.
-
-See `outputs/metrics.json` for the measured cluster count and silhouette score from the included run; `outputs/cluster_centers.csv` contains centers in original units. Silhouette ranges from -1 to 1, with higher values generally indicating stronger separation. It is not classification accuracy because no ground-truth customer labels are available.
-
-At k=5, the deliberately generated groups approximately represent lower-income/lower-spending, lower-income/higher-spending, middle-income/middle-spending, higher-income/lower-spending, and higher-income/higher-spending customers. Match descriptions to center values rather than hard-coding cluster numbers. These descriptions are exploratory and should be validated with real customer research before making business decisions.
-
-![Elbow curve](outputs/elbow_curve.png)
-![Customer segments](outputs/customer_clusters.png)
-
-## Saved model
-`models/kmeans_pipeline.pkl` contains both the fitted scaler and K-Means estimator. Load only trusted pickle files. Use the same dependency versions when reloading.
-```python
-import pickle
-import pandas as pd
-
-with open("models/kmeans_pipeline.pkl", "rb") as file:
-    model = pickle.load(file)
-new_customers = pd.DataFrame({
-    "Annual Income (k$)": [40, 90],
-    "Spending Score (1-100)": [30, 80],
-})
-print(model.predict(new_customers))
+```powershell
+.\.venv\Scripts\python.exe -m unittest -v test_project.py
+# Optional browser/document tools:
+.\.venv\Scripts\python.exe -m pip install -r requirements-docs.txt
+.\.venv\Scripts\python.exe scripts/capture_screenshots.py
+.\.venv\Scripts\python.exe scripts/build_report.py
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_presentation.ps1
+.\.venv\Scripts\python.exe scripts/verify_artifacts.py
 ```
-New prediction features must be numeric and nonmissing. The saved pipeline handles scaling, while CSV validation and median imputation occur separately in `preprocess()` during analysis.
 
-## Future improvements
-- Validate on consented, representative real customer data.
-- Compare k using silhouette analysis, stability across seeds, and business usefulness.
-- Investigate outliers and compare DBSCAN or Gaussian mixture models.
-- Add purchase frequency and recency with careful feature weighting.
-- Fit and persist an imputer for a production prediction workflow.
-- Monitor segment changes and evaluate campaigns with controlled experiments.
+Screenshot capture requires Microsoft Edge. Presentation regeneration requires Microsoft PowerPoint on Windows. See [editing instructions](documentation/EDITING_GUIDE.md); neither tool is needed for everyday dashboard use.
 
-## Verification
-Run `python -m unittest -v test_project.py` in the project environment. The checks cover customer preservation, missing-value imputation, invalid input rejection, original-unit centers, pipeline predictions, dashboard startup, and changing the dashboard cluster count.
+## Project Structure
 
-## References
-- [scikit-learn KMeans](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html)
-- [scikit-learn StandardScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html)
-- [Streamlit interactive Plotly charts](https://docs.streamlit.io/develop/api-reference/charts/st.plotly_chart)
+```text
+AI_Customer_Segmentation/
+|-- dataset/                   # Customer/transaction CSVs and provenance
+|-- models/                    # Fitted model and preprocessing bundles
+|-- database/                  # Local customers.db and auth.db, auto-created
+|-- outputs/                   # Graphs, metrics, assignments and prediction
+|-- screenshots/               # Eight dashboard captures
+|-- documentation/
+|   |-- Project_Report.pdf     # 44-page report
+|   |-- Presentation.pptx      # 15 editable slides
+|   |-- Viva_Guide.md          # 50 answers and two-minute explanation
+|   |-- Project_Report_Source.md
+|   |-- submission_details.json
+|   |-- EDITING_GUIDE.md
+|   |-- VERIFICATION.md
+|   `-- screenshots/
+|-- src/                       # Auth, preprocessing, clustering, prediction,
+|                              # recommendations, database and workflow
+|-- app_pages/                 # Six protected dashboard views
+|-- scripts/                   # Screenshot, PDF, PPTX and ZIP generators
+|-- legacy/                    # Original 500-customer project
+|-- .streamlit/config.toml
+|-- .vscode/settings.json
+|-- app.py
+|-- main.py
+|-- test_project.py
+|-- requirements.txt
+|-- requirements-lock.txt
+|-- requirements-dev.txt
+|-- requirements-docs.txt
+|-- AI_Customer_Segmentation_Project_Report.pdf
+|-- AI_Customer_Segmentation_Presentation.pptx
+|-- VIVA_GUIDE_FINAL.md
+`-- README.md
+```
 
-See [VIVA_GUIDE.md](VIVA_GUIDE.md) for a presentation plan and common questions.
+SQLite history tables: `datasets`, `customers`, `transactions`, `runs`, `cluster_results` and `recommendations`. Authentication uses separate `auth.db`. Running `main.py` builds the analytics database from the included CSVs in a fresh copy. One-off prediction inputs are not inserted as customers.
+
+## Future Scope
+
+- Validate segments on representative customer data and review them with domain experts.
+- Study stability across seeds, samples, windows and parameter settings.
+- Evaluate feature weights and correlated RFM measurements.
+- Add order/refund handling, product affinity and drift monitoring.
+- Measure campaign outcomes through controlled experiments.
+- Add managed identity, access roles, retention controls and production monitoring.
+
+## Limitations
+
+- Synthetic data cannot establish real-world segment quality or revenue gains.
+- Internal metrics are not accuracy. DBSCAN scores describe its assigned subset.
+- Scaling, correlation, feature choice and parameters influence results.
+- Ward and DBSCAN prediction use documented extensions rather than native new-point prediction.
+- Recommendations inherit group profiles; they are rule-based and do not rank individual products.
+- The shared local account and SQLite design target college demonstration, not production deployment.
+- Saved pickle files must be trusted and version-compatible; uploaded pickle artifacts are not accepted.
+
+## College Submission
+
+Editable details use the information supplied: **Nigilan**, **145731105**, **Sathyabama university**, **BE CSE AI**, **2026–2027**. The guide remains `[Guide name - not assigned]`. The certificate is an unsigned template for institutional review; no signature, approval or guide identity is fabricated.
+
+Read the [two-minute explanation and 50 viva answers](VIVA_GUIDE_FINAL.md), then demonstrate login, model comparison, prediction and CSV upload.

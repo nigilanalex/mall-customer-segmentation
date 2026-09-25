@@ -1,5 +1,5 @@
-Cluster,Annual Income (k$),Spending Score (1-100)
-0,94.47326732673267,20.732673267326728
-1,41.27076923076923,34.42051282051282
-2,24.693000000000005,81.41000000000001
-3,93.82596153846154,81.14423076923077
+Cluster,Annual Income,Spending Score,Age,Recency,Purchase Frequency,Total Purchase Amount,Customers,Category,Recommendation
+0,89.48720472440945,34.34251968503937,48.05511811023622,80.78740157480316,8.635826771653543,927.4079527559055,508,Growth opportunity,Special discounts and personalized product campaigns.
+1,109.37008042895442,83.21983914209115,41.94101876675603,11.769436997319035,32.01340482573727,7469.590509383377,373,VIP segment,"Premium membership, luxury offers and early access. Offer a repeat-purchase loyalty benefit."
+2,43.78590206185567,68.06829896907216,31.699742268041238,28.832474226804123,19.426546391752577,1274.223530927835,776,Value-focused loyalists,"Budget-friendly offers, bundles and loyalty rewards. Offer a repeat-purchase loyalty benefit."
+3,29.976209912536444,22.020408163265305,35.9067055393586,145.70845481049562,4.072886297376093,137.01702623906704,343,At-risk / Engagement segment,Engagement campaigns and introductory value offers. Prioritize a win-back message because average recency exceeds 90 days.

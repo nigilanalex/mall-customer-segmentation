@@ -1,198 +1,80 @@
-"""Reproducible customer segmentation. Run: python main.py --help."""
-from pathlib import Path
+"""Train and export the complete analytics project: python main.py."""
 import argparse
 import json
-import pickle
+import sqlite3
 import sys
-
-import matplotlib
-matplotlib.use("Agg")  # Save charts without requiring a desktop window.
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-BASE = Path(__file__).resolve().parent
-DATASET = BASE / "dataset" / "Mall_Customers.csv"
-FEATURES = ["Annual Income (k$)", "Spending Score (1-100)"]
-COLUMNS = ["CustomerID", "Gender", "Age", *FEATURES]
-SEED = 42
-
-
-def generate_dataset(path=DATASET, records=500):
-    """Create clearly synthetic demo data, without overwriting an existing file."""
-    path = Path(path)
-    if path.exists():
-        raise FileExistsError(f"Refusing to overwrite {path}")
-    rng = np.random.default_rng(SEED)
-    prototypes = np.array([[25, 22], [25, 80], [60, 50], [95, 20], [95, 82]])
-    groups = np.arange(records) % len(prototypes)
-    rng.shuffle(groups)
-    points = prototypes[groups] + rng.normal(0, [7, 7], size=(records, 2))
-    data = pd.DataFrame({
-        "CustomerID": np.arange(1, records + 1),
-        "Gender": rng.choice(["Female", "Male"], records),
-        "Age": rng.integers(18, 71, records),
-        FEATURES[0]: np.round(np.clip(points[:, 0], 10, 150), 1),
-        FEATURES[1]: np.rint(np.clip(points[:, 1], 1, 100)).astype(int),
-    })
-    path.parent.mkdir(parents=True, exist_ok=True)
-    data.to_csv(path, index=False)
-    return data
-
-
-def load_data(source):
-    """Accept a file path or a Streamlit uploaded CSV."""
-    try:
-        return pd.read_csv(source)
-    except (OSError, UnicodeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
-        raise ValueError(f"Cannot read CSV: {exc}") from exc
-
-
-def preprocess(data):
-    """Validate the schema and median-impute missing numeric measurements."""
-    data = data.copy()
-    data.columns = data.columns.str.strip()
-    if data.columns.duplicated().any():
-        raise ValueError("Column names must be unique.")
-    missing = sorted(set(COLUMNS) - set(data.columns))
-    if missing:
-        raise ValueError(f"Missing required columns: {', '.join(missing)}")
-    if len(data) < 3:
-        raise ValueError("Provide at least three customers.")
-    if data.CustomerID.isna().any() or data.CustomerID.duplicated().any():
-        raise ValueError("CustomerID must be present and unique for every row.")
-    notes = []
-    for column in ["Age", *FEATURES]:
-        original = data[column]
-        numeric = pd.to_numeric(original, errors="coerce")
-        if (original.notna() & numeric.isna()).any():
-            raise ValueError(f"{column} contains nonnumeric values.")
-        if np.isinf(numeric.to_numpy(dtype=float)).any():
-            raise ValueError(f"{column} contains infinite values.")
-        if numeric.notna().sum() == 0:
-            raise ValueError(f"{column} has no observed numeric values.")
-        if column == FEATURES[1] and not numeric.dropna().between(1, 100).all():
-            raise ValueError("Spending scores must be between 1 and 100.")
-        if column != FEATURES[1] and (numeric.dropna() < 0).any():
-            raise ValueError(f"{column} cannot be negative.")
-        if numeric.isna().any():
-            notes.append(f"{column}: filled {numeric.isna().sum()} missing values with median {numeric.median():.2f}.")
-        data[column] = numeric.fillna(numeric.median())
-    data["Gender"] = data["Gender"].fillna("Unknown")
-    if len(data[FEATURES].drop_duplicates()) < 3:
-        raise ValueError("Provide at least three distinct income/spending pairs.")
-    return data, notes
-
-
-def elbow_analysis(data):
-    """Estimate a knee by maximum distance below the normalized endpoint line.
-
-    This is a heuristic suggestion, not proof of an optimal cluster count.
-    """
-    scaled = StandardScaler().fit_transform(data[FEATURES])
-    maximum = min(10, len(data) - 1, len(data[FEATURES].drop_duplicates()))
-    ks = np.arange(1, maximum + 1)
-    inertias = [KMeans(n_clusters=int(k), n_init=10, random_state=SEED).fit(scaled).inertia_ for k in ks]
-    x = (ks - ks[0]) / (ks[-1] - ks[0])
-    y = (np.array(inertias) - inertias[-1]) / (inertias[0] - inertias[-1])
-    suggested = int(ks[np.argmax((1 - x) - y)])
-    suggested = max(2, suggested)
-    return pd.DataFrame({"k": ks, "Inertia": inertias}), suggested
-
-
-def train_model(data, k):
-    """Scale the two features and fit K-Means; return centers in original units."""
-    maximum = min(len(data) - 1, len(data[FEATURES].drop_duplicates()))
-    if not 2 <= k <= maximum:
-        raise ValueError(f"Clusters must be between 2 and {maximum}.")
-    pipeline = Pipeline([
-        ("scaler", StandardScaler()),
-        ("kmeans", KMeans(n_clusters=k, init="k-means++", n_init=10, random_state=SEED)),
-    ])
-    labeled = data.copy()
-    labeled["Cluster"] = pipeline.fit_predict(data[FEATURES])
-    centers = pd.DataFrame(pipeline["scaler"].inverse_transform(pipeline["kmeans"].cluster_centers_), columns=FEATURES)
-    centers.index.name = "Cluster"
-    scaled = pipeline["scaler"].transform(data[FEATURES])
-    # Bound silhouette computation for larger uploads.
-    score = silhouette_score(scaled, labeled.Cluster, sample_size=min(5000, len(data)), random_state=SEED)
-    return pipeline, labeled, centers, float(score)
-
-
-def save_charts(data, elbow, centers, k, output):
-    """Save EDA, elbow, and labeled scatter plots as presentation-ready PNGs."""
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
-    sns.set_theme(style="whitegrid")
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
-    for ax, column in zip(axes, ["Age", *FEATURES]):
-        sns.histplot(data[column], bins=20, ax=ax, color="#2563eb")
-    fig.suptitle("Customer data: feature distributions")
-    fig.tight_layout()
-    fig.savefig(output / "customer_eda.png", dpi=160)
-    plt.close(fig)
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(elbow.k, elbow.Inertia, "o-", color="#2563eb")
-    ax.axvline(k, color="#ea580c", linestyle="--", label=f"Selected k = {k}")
-    ax.set(xlabel="Number of clusters (k)", ylabel="Within-cluster sum of squares (scaled units)", title="Elbow method")
-    ax.set_xticks(elbow.k)
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(output / "elbow_curve.png", dpi=160)
-    plt.close(fig)
-    fig, ax = plt.subplots(figsize=(9, 6))
-    sns.scatterplot(data=data, x=FEATURES[0], y=FEATURES[1], hue="Cluster", palette="tab10", alpha=.75, ax=ax)
-    ax.scatter(centers[FEATURES[0]], centers[FEATURES[1]], marker="X", s=220, c="black", edgecolors="white", label="Centers")
-    ax.set_title(f"Mall customer segmentation | k = {k}")
-    ax.legend(title="Cluster")
-    fig.tight_layout()
-    fig.savefig(output / "customer_clusters.png", dpi=160)
-    plt.close(fig)
+from pathlib import Path
+from src.config import BASE, CUSTOMERS, TRANSACTIONS, DATABASE, BUNDLE, AS_OF, ALGORITHMS
+from src.data_generation import generate_data
+from src.preprocessing import load_csv, prepare_customers
+from src.database import store_dataset, load_customers, store_results
+from src.workflow import analyze, save_bundle
+from src.recommendation import customer_results
+from src.visualization import save_charts
+from src.prediction import predict_customer
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data", type=Path, default=DATASET, help="Input CSV path")
-    parser.add_argument("--clusters", type=int, help="Override the elbow suggestion")
+    parser.add_argument("--data", type=Path, default=CUSTOMERS)
+    parser.add_argument("--transactions", type=Path, help="Purchase ledger; bundled ledger only used with bundled customers")
+    parser.add_argument("--as-of", default=AS_OF, help="RFM reference date, YYYY-MM-DD")
+    parser.add_argument("--mode", choices=["advanced", "classic"], default="advanced")
+    parser.add_argument("--clusters", type=int, help="Override elbow-suggested k")
+    parser.add_argument("--eps", type=float, default=0.75)
+    parser.add_argument("--min-samples", type=int, default=10)
     parser.add_argument("--output", type=Path, default=BASE / "outputs")
+    parser.add_argument("--database", type=Path, default=DATABASE)
+    parser.add_argument("--model-dir", type=Path, default=BASE / "models")
+    parser.add_argument("--generate", action="store_true", help="Regenerate bundled synthetic data with 2,000 customers")
     args = parser.parse_args()
     try:
-        if args.data == DATASET and not DATASET.exists():
-            generate_dataset()
-            print("Generated 500 SYNTHETIC demonstration customers.")
-        raw = load_data(args.data)
+        if args.generate or not CUSTOMERS.exists():
+            customers, transactions = generate_data(as_of=args.as_of)
+            CUSTOMERS.parent.mkdir(exist_ok=True)
+            customers.to_csv(CUSTOMERS, index=False)
+            transactions.to_csv(TRANSACTIONS, index=False)
+            (CUSTOMERS.parent / "provenance.json").write_text(json.dumps({"synthetic": True, "customers": 2000, "seed": 42, "as_of": args.as_of, "window_days": 365, "income_unit": "thousands of USD", "amount_unit": "USD"}, indent=2))
+        raw = load_csv(args.data)
+        tx_path = args.transactions or (TRANSACTIONS if args.data.resolve() == CUSTOMERS.resolve() and TRANSACTIONS.exists() else None)
+        transactions = load_csv(tx_path) if tx_path else None
         print("\nDATASET INFORMATION")
         raw.info()
-        print("\nMissing values before preprocessing:\n", raw.isna().sum())
-        data, notes = preprocess(raw)
-        print("\nPreprocessing:", notes or "No missing numeric measurements.")
-        print("\nDescriptive statistics:\n", data.describe().round(2))
-        elbow, suggested = elbow_analysis(data)
-        k = args.clusters if args.clusters is not None else suggested
-        model, labeled, centers, score = train_model(data, k)
-        print(f"\nElbow suggestion: {suggested}; number of clusters: {k}")
-        print(f"Silhouette score: {score:.3f} (not classification accuracy)")
-        print("\nCUSTOMER CLUSTER ASSIGNMENTS\n", labeled[["CustomerID", "Cluster"]].to_string(index=False))
-        print("\nCLUSTER CENTERS (original units)\n", centers.round(2))
-        print("\nCustomers per cluster:\n", labeled.Cluster.value_counts().sort_index())
-        save_charts(labeled, elbow, centers, k, args.output)
-        labeled.to_csv(args.output / "segmented_customers.csv", index=False)
-        centers.to_csv(args.output / "cluster_centers.csv")
-        elbow.to_csv(args.output / "elbow_scores.csv", index=False)
-        metadata = {"rows": len(data), "features": FEATURES, "suggested_k": suggested, "selected_k": k, "silhouette_score": score, "random_state": SEED, "input": str(args.data.resolve())}
-        (args.output / "metrics.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-        model_dir = BASE / "models"
-        model_dir.mkdir(exist_ok=True)
-        with (model_dir / "kmeans_pipeline.pkl").open("wb") as file:
-            pickle.dump(model, file)
-        print(f"\nSaved charts, tables, and metrics to {args.output.resolve()}")
+        print("\nMissing values:\n", raw.isna().sum())
+        clean, notes = prepare_customers(raw, transactions, args.as_of, args.mode)
+        dataset_id = store_dataset(clean, transactions, args.as_of, args.data.name, args.database)
+        database_data = load_customers(dataset_id, args.database)
+        bundle = analyze(database_data, as_of=args.as_of, mode=args.mode, k=args.clusters, eps=args.eps, min_samples=args.min_samples)
+        bundle.update({"notes": notes, "raw_missing": raw.isna().sum(), "source": args.data.name, "dataset_id": dataset_id,
+                       "transaction_count": 0 if transactions is None else len(transactions)})
+        bundle["run_id"] = store_results(bundle, dataset_id, args.database)
+        args.output.mkdir(parents=True, exist_ok=True)
+        args.model_dir.mkdir(parents=True, exist_ok=True)
+        save_bundle(bundle, args.model_dir / BUNDLE.name)
+        for name in ALGORITHMS:
+            artifact = {key: value for key, value in bundle.items() if key != "models"}
+            artifact["models"] = {name: bundle["models"][name]}
+            artifact["best_model"] = name
+            save_bundle(artifact, args.model_dir / (name.lower().replace(" ", "_").replace("-", "_") + ".pkl"))
+        results = customer_results(bundle)
+        results.to_csv(args.output / "segmented_customers.csv", index=False)
+        bundle["models"][bundle["best_model"]]["profiles"].to_csv(args.output / "cluster_centers.csv")
+        bundle["comparison"].to_csv(args.output / "model_comparison.csv", index=False)
+        bundle["elbow"].to_csv(args.output / "elbow_scores.csv", index=False)
+        metrics = {key: bundle[key] for key in ["best_model", "mode", "features", "k", "suggested_k", "as_of", "eps", "min_samples"]}
+        metrics.update({"customers": len(raw), "transactions": 0 if transactions is None else len(transactions)})
+        (args.output / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+        example = predict_customer(bundle, bundle["data"].iloc[0].to_dict())
+        example["details"] = example["details"].to_dict("records")
+        (args.output / "sample_prediction.json").write_text(json.dumps(example, indent=2), encoding="utf-8")
+        save_charts(bundle, args.output)
+        print("\n", bundle["comparison"].round(4).to_string(index=False))
+        print(f"\nRecommended model: {bundle['best_model']}; selected k: {bundle['k']}; elbow suggestion: {bundle['suggested_k']}")
+        print("\nCLUSTER PROFILES\n", bundle["models"][bundle["best_model"]]["profiles"].round(2).to_string())
+        print("\nCUSTOMER ASSIGNMENTS\n", results[["CustomerID", "Cluster", "Category"]].to_string(index=False))
+        print(f"\nSaved outputs to {args.output}; SQLite run: {bundle['run_id']}")
         return 0
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, sqlite3.Error) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 

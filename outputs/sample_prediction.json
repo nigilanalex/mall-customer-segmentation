@@ -1,0 +1,54 @@
+{
+  "model": "K-Means",
+  "cluster": 2,
+  "category": "Value-focused loyalists",
+  "recommendation": "Budget-friendly offers, bundles and loyalty rewards. Offer a repeat-purchase loyalty benefit.",
+  "method": "Native model prediction",
+  "probability": null,
+  "warnings": [],
+  "explanation": "Closest feature matches: Total Purchase Amount, Purchase Frequency, Age. Positive support means this feature favors the assigned center over the next nearest center, in squared standardized distance.",
+  "details": [
+    {
+      "Feature": "Annual Income",
+      "Customer value": 72.03,
+      "Cluster mean": 43.78590206185567,
+      "Standardized gap": 0.806811016122261,
+      "Support vs next center": 0.4867846994188305
+    },
+    {
+      "Feature": "Spending Score",
+      "Customer value": 39.0,
+      "Cluster mean": 68.06829896907216,
+      "Standardized gap": 1.0799746477092385,
+      "Support vs next center": 1.5327748111804347
+    },
+    {
+      "Feature": "Age",
+      "Customer value": 29.0,
+      "Cluster mean": 31.699742268041238,
+      "Standardized gap": 0.23749681565725056,
+      "Support vs next center": 1.2396039238075267
+    },
+    {
+      "Feature": "Recency",
+      "Customer value": 6.0,
+      "Cluster mean": 28.832474226804123,
+      "Standardized gap": 1.042453082457849,
+      "Support vs next center": -0.9782629833792332
+    },
+    {
+      "Feature": "Purchase Frequency",
+      "Customer value": 16.0,
+      "Cluster mean": 19.426546391752577,
+      "Standardized gap": 0.18163851376328688,
+      "Support vs next center": 0.7209595819237641
+    },
+    {
+      "Feature": "Total Purchase Amount",
+      "Customer value": 1430.3,
+      "Cluster mean": 1274.223530927835,
+      "Standardized gap": 0.11826044485923526,
+      "Support vs next center": 1.5198769869712117
+    }
+  ]
+}

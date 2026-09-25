@@ -1,0 +1,26 @@
+# Adapted from the Streamlit minimal theme; system fonts keep the demo offline.
+[theme]
+base = "light"
+primaryColor = "#0d9488"
+backgroundColor = "#f8fafc"
+secondaryBackgroundColor = "#eaf1f5"
+textColor = "#172b3a"
+borderColor = "#dce5eb"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "10px"
+font = "sans-serif"
+headingFontWeights = [700, 650, 600, 600, 600, 600]
+chartCategoricalColors = ["#0d9488", "#6366f1", "#f59e0b", "#ec4899", "#0284c7"]
+
+[theme.sidebar]
+backgroundColor = "#102b36"
+secondaryBackgroundColor = "#1b3a46"
+textColor = "#edf6f7"
+primaryColor = "#5eead4"
+
+[server]
+maxUploadSize = 25
+
+[browser]
+gatherUsageStats = false

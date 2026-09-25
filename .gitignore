@@ -6,3 +6,9 @@ __pycache__/
 .env
 .env.*
 .streamlit/secrets.toml
+database/*.db
+database/*.db-*
+outputs/browser_checks/
+documentation/.build/
+documentation/.qa/
+*.pptx.tmp

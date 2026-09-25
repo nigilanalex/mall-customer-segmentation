@@ -1,0 +1,10 @@
+{
+  "screenshots": 8,
+  "login_failure_and_success": "passed",
+  "six_pages": "passed",
+  "prediction": "passed",
+  "upload": "passed",
+  "logout_and_protected_url": "passed",
+  "3d_rendering": "passed",
+  "mobile_login_and_home": "passed"
+}

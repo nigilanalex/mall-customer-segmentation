@@ -1,0 +1,12 @@
+{
+  "rows": 500,
+  "features": [
+    "Annual Income (k$)",
+    "Spending Score (1-100)"
+  ],
+  "suggested_k": 4,
+  "selected_k": 4,
+  "silhouette_score": 0.6371241003646813,
+  "random_state": 42,
+  "input": "D:\\ML project\\Mall_Customer_Segmentation\\dataset\\Mall_Customers.csv"
+}
