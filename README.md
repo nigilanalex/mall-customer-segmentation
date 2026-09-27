@@ -173,28 +173,35 @@ These are actual screenshots from the running application, saved in `documentati
 
 Use Python 3.11 or newer. The verified local environment uses Python 3.14.6. Open the folder in VS Code and select `.venv\Scripts\python.exe` through **Python: Select Interpreter**.
 
-For a fresh copy, use the VS Code PowerShell terminal:
+Install Python 3.11 or newer, then use this **single command** in the VS Code PowerShell terminal (or any terminal):
 
 ```powershell
-cd "D:\ML project\AI_Customer_Segmentation"
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe main.py
-.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
+python "D:\ML project\AI_Customer_Segmentation\run.py"
 ```
 
-Replace the first path if extracted elsewhere. `requirements-lock.txt` records verified runtime versions for compatible environments. macOS/Linux users can substitute `python3 -m venv .venv` and `.venv/bin/python`.
+Replace the path if extracted elsewhere. The launcher creates `.venv` if needed, installs required packages, prepares missing analytics files and starts the dashboard. First-time setup needs an internet connection to download packages. New environments rebuild the bundled models with their installed libraries. Existing environments reuse saved models and database files. No environment activation is needed. `requirements-lock.txt` records verified runtime versions for compatible environments.
 
 ## How to Run
 
-The existing local environment is already installed. Start with:
+From the project folder, start everything with:
 
 ```powershell
-cd "D:\ML project\AI_Customer_Segmentation"
-.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1
+python run.py
 ```
 
 Open **http://localhost:8501**. Login: **`admin` / `admin123`**. Keep the terminal open; press **Ctrl+C** to stop. Virtual-environment activation is unnecessary with these commands.
+
+On Windows, use `py -3 run.py` if the Python launcher is available instead of `python`. On macOS/Linux, use `python3 run.py`.
+
+Optional startup commands:
+
+```powershell
+python run.py --port 8502     # Use another port if 8501 is occupied
+python run.py --retrain       # Refresh models/outputs, then open the dashboard
+python run.py --prepare-only  # Install and prepare without starting the server
+```
+
+Retraining replaces current model/output artifacts and appends an analytics database run. Regular startup reuses them when already present. The launcher stops and displays the error if installation or training fails.
 
 ### Authentication and Navigation
 
@@ -263,6 +270,7 @@ AI_Customer_Segmentation/
 |-- .vscode/settings.json
 |-- app.py
 |-- main.py
+|-- run.py                     # One-command setup and dashboard startup
 |-- test_project.py
 |-- requirements.txt
 |-- requirements-lock.txt
